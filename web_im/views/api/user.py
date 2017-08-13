@@ -1,13 +1,12 @@
 import sqlalchemy.exc
 from flask import Blueprint, session, jsonify, request
-from web_im.models.user import User
+from web_im.models.user import User, ContactRelation
 
 bp = Blueprint("user", __name__, url_prefix="/api/user")
 
 
-@bp.route("/register")
+@bp.route("/register", methods=['POST'])
 def register():
-    # TODO: POST only
     username = request.values.get("username")
     password = request.values.get("password")
 
@@ -27,9 +26,8 @@ def register():
     return jsonify({"error": 0, "user_id": user_id})
 
 
-@bp.route("/login")
+@bp.route("/login", methods=['POST'])
 def login():
-    # TODO: POST only
     username = request.values.get("username")
     password = request.values.get("password")
     uid = User.login_challenge(username, password)
@@ -41,8 +39,37 @@ def login():
         return jsonify({"error": 0})
 
 
-@bp.route("/logout")
+@bp.route("/logout", methods=['POST'])
 def logout():
-    # TODO: csrf
     session.pop("user_id", None)
+    return jsonify({"error": 0})
+
+
+@bp.route("/connect", methods=['POST'])
+def connect():
+    username = request.values.get("username")
+
+    if "user_id" not in session:
+        return jsonify({"error": 1003, "error_msg": "login first"})
+
+    target_user = User.get_by_name(username)
+    if target_user is None:
+        return jsonify({"error": 1004, "error_msg": "user not found"})
+
+    ContactRelation.connect(session["user_id"], target_user.id)
+    return jsonify({"error": 0})
+
+
+@bp.route("/disconnect", methods=['POST'])
+def disconnect():
+    user_id = request.values.get("user_id")
+
+    if "user_id" not in session:
+        return jsonify({"error": 1003, "error_msg": "login first"})
+
+    target_user = User.get(user_id)
+    if target_user is None:
+        return jsonify({"error": 1004, "error_msg": "user not found"})
+
+    ContactRelation.disconnect(session["user_id"], target_user.id)
     return jsonify({"error": 0})

@@ -1,0 +1,70 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+
+<div id="header">
+  Current user: @{{ sender.name }}
+  Recipient: @{{ recipient.name }}
+  <a href="/">back</a>
+
+  <hr>
+
+  <h2>Messages</h2>
+  <ul>
+    {% for message in messages %}
+      <li>
+        {{ message.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC") }}
+        {{ name_dict[message.sender] | e }}: {{ message.body | e }}
+        {% if message.sender == sender.id %}
+          <a class="delete-message" data-message-id="{{ message.id }}" href="#">[x]</a>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+
+  <hr>
+
+  <form id="send-msg"
+        action="{{ url_for('chat.send_message', recipient_id=recipient.id) }}" method="post">
+    <input type="text" name="body" id="body" value="" placeholder="shut up" />
+    <input type="submit" name="" id="" value="Send" />
+  </form>
+
+</div>
+{% endblock %}
+
+{% block footer %}
+<script>
+  $(document).ready(function(){
+    $("form#send-msg").submit(function(e) {
+      $.post(
+        $(this).attr("action"),
+        $(this).serialize(),
+        function(data) {
+          if (data.error) {
+            alert(data.error_msg);
+          } else {
+            location.reload();
+          }
+        }
+      )
+      e.preventDefault();
+    });
+
+    $(".delete-message").on("click", function(e) {
+      $.post(
+        "/api/chat/delete_message",
+        'message_id=' + $(this).data('message-id'),
+        function(data) {
+          if (data.error) {
+            alert(data.error_msg);
+          } else {
+            location.reload();
+          }
+        }
+      )
+    });
+  });
+
+</script>
+{% endblock %}
