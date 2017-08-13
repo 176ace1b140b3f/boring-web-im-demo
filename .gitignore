@@ -1,0 +1,6 @@
+*.py[oc]
+*.sw[op]
+__pycache__
+.cache/
+.eggs/
+*.egg-info/
